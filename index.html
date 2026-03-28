@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Diccionario · 我的西班牙文字典</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Dic">
+<meta name="theme-color" content="#c1440e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase compat SDK (避免 module 時序問題) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+
+  :root {
+    --bg:              #faf6f0;
+    --surface:         #fff9f2;
+    --border:          #e8d8c4;
+    --terracotta:      #c1440e;
+    --terracotta-light:#e05a20;
+    --gold:            #b07d3a;
+    --text:            #2a1f14;
+    --muted:           #8a7060;
+    --green:           #3a7d5a;
+    --blue:            #2d5f8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--terracotta);
+    padding: 20px 24px 16px;
+    position: relative; overflow: hidden;
+  }
+  header::before {
+    content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(45deg,transparent,transparent 18px,rgba(255,255,255,0.04) 18px,rgba(255,255,255,0.04) 36px);
+  }
+  .header-inner { position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header h1 { font-family:'Playfair Display',serif; font-size:1.7rem; color:#fff; letter-spacing:0.02em; }
+  header h1 span { font-style:italic; font-weight:400; opacity:0.82; font-size:0.95rem; display:block; margin-top:1px; }
+
+  /* AUTH */
+  #auth-area { display:flex; align-items:center; }
+  #user-area  { display:none; align-items:center; gap:10px; }
+  .google-btn {
+    display:flex; align-items:center; gap:8px;
+    background:#fff; color:#2a1f14;
+    border:none; border-radius:20px;
+    padding:8px 16px; font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500;
+    cursor:pointer; transition:all 0.18s;
+  }
+  .google-btn:hover { transform:translateY(-1px); box-shadow:0 3px 12px rgba(0,0,0,0.18); }
+  .google-btn svg { width:18px; height:18px; flex-shrink:0; }
+  #user-avatar { width:30px; height:30px; border-radius:50%; border:2px solid rgba(255,255,255,0.6); }
+  #user-name   { color:#fff; font-size:0.85rem; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .signout-btn { background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.4); color:#fff; border-radius:12px; padding:5px 12px; font-size:0.78rem; cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+  .signout-btn:hover { background:rgba(255,255,255,0.28); }
+
+  /* LAYOUT */
+  .container { max-width:860px; margin:0 auto; padding:28px 18px 60px; }
+
+  /* SEARCH CARD */
+  .search-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:22px; box-shadow:0 2px 16px rgba(42,31,20,0.07); }
+  .lang-tabs { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .lang-tab { padding:7px 15px; border-radius:20px; border:1.5px solid var(--border); background:transparent; font-family:'DM Sans',sans-serif; font-size:0.83rem; cursor:pointer; color:var(--muted); transition:all 0.18s; }
+  .lang-tab:hover { border-color:var(--terracotta); color:var(--terracotta); }
+  .lang-tab.active { background:var(--terracotta); border-color:var(--terracotta); color:#fff; font-weight:500; }
+  .search-row { display:flex; gap:10px; }
+  .search-input { flex:1; padding:12px 15px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:1rem; background:var(--bg); color:var(--text); outline:none; transition:border-color 0.18s; }
+  .search-input:focus { border-color:var(--terracotta); }
+  .search-input::placeholder { color:var(--muted); }
+
+  .btn { padding:12px 20px; border:none; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.92rem; font-weight:500; cursor:pointer; transition:all 0.18s; }
+  .btn-primary { background:var(--terracotta); color:#fff; }
+  .btn-primary:hover { background:var(--terracotta-light); transform:translateY(-1px); }
+  .btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .btn-sm { padding:8px 13px; font-size:0.82rem; border-radius:8px; }
+  .btn-outline { background:transparent; border:1.5px solid var(--border); color:var(--muted); }
+  .btn-outline:hover { border-color:var(--terracotta); color:var(--terracotta); }
+  .btn-save { background:var(--gold); color:#fff; padding:9px 20px; font-size:0.88rem; }
+  .btn-save:hover { background:#c48f45; transform:translateY(-1px); }
+  .btn-save.saved { background:var(--green); cursor:default; transform:none; }
+
+  /* RESULT */
+  .result-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 2px 16px rgba(42,31,20,0.07); margin-top:20px; animation:fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .result-top { padding:18px 22px 14px; display:flex; align-items:flex-start; gap:14px; border-bottom:1px solid var(--border); }
+  .result-word .es-word { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--terracotta); line-height:1.2; }
+  .result-word .word-type { font-size:0.77rem; color:var(--muted); font-style:italic; margin-top:2px; }
+  .speak-btn { background:var(--terracotta); border:none; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.18s; margin-top:4px; }
+  .speak-btn:hover { background:var(--terracotta-light); transform:scale(1.05); }
+  .speak-btn svg { width:19px; height:19px; fill:white; }
+  .translations { padding:14px 22px 16px; }
+  .trans-row { display:flex; align-items:baseline; gap:10px; padding:7px 0; border-bottom:1px dashed var(--border); }
+  .trans-row:last-child { border-bottom:none; }
+  .lang-badge { font-size:0.68rem; font-weight:500; padding:2px 8px; border-radius:10px; flex-shrink:0; letter-spacing:0.05em; text-transform:uppercase; }
+  .badge-es { background:#fce8e0; color:var(--terracotta); }
+  .badge-en { background:#ddeaf7; color:var(--blue); }
+  .badge-zh { background:#ddf0e7; color:var(--green); }
+  .trans-text { font-size:1rem; color:var(--text); }
+  .result-actions { padding:12px 22px; background:rgba(232,216,196,0.2); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+  /* STATUS */
+  .status-msg { font-size:0.85rem; padding:10px 14px; border-radius:8px; margin-top:12px; display:none; }
+  .status-msg.error   { background:#fde8e4; color:#c0392b; display:block; }
+  .status-msg.loading { background:#fff3e8; color:var(--gold); display:block; }
+
+  /* SECTION */
+  .section-title { font-family:'Playfair Display',serif; font-size:1.25rem; color:var(--text); margin:34px 0 12px; display:flex; align-items:center; gap:10px; }
+  .count-pill { background:var(--terracotta); color:#fff; font-family:'DM Sans',sans-serif; font-size:0.78rem; font-weight:500; padding:2px 10px; border-radius:12px; }
+  .list-controls { display:flex; gap:10px; margin-bottom:13px; flex-wrap:wrap; align-items:center; }
+  .list-search { flex:1; min-width:150px; padding:8px 13px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.9rem; background:var(--bg); color:var(--text); outline:none; }
+  .list-search:focus { border-color:var(--terracotta); }
+
+  /* VOCAB ITEM */
+  #vocab-list { display:flex; flex-direction:column; gap:8px; }
+  .vocab-item { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px; transition:box-shadow 0.15s; }
+  .vocab-item:hover { box-shadow:0 2px 12px rgba(42,31,20,0.08); }
+  .vocab-es { font-family:'Playfair Display',serif; font-size:1.12rem; color:var(--terracotta); min-width:120px; }
+  .vocab-divider { width:1px; height:28px; background:var(--border); flex-shrink:0; }
+  .vocab-trans { flex:1; display:flex; flex-direction:column; gap:2px; }
+  .vocab-en { font-size:0.88rem; color:var(--blue); }
+  .vocab-zh { font-size:0.88rem; color:var(--green); }
+  .vocab-actions { display:flex; gap:5px; flex-shrink:0; }
+  .icon-btn { width:32px; height:32px; border-radius:7px; border:1.5px solid var(--border); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; color:var(--muted); }
+  .icon-btn:hover { border-color:var(--terracotta); color:var(--terracotta); }
+  .icon-btn.delete:hover { border-color:#c0392b; color:#c0392b; }
+  .icon-btn svg { width:15px; height:15px; }
+
+  /* EMPTY */
+  .empty-state { text-align:center; padding:36px 20px; color:var(--muted); border:2px dashed var(--border); border-radius:12px; }
+  .empty-state .empty-icon { font-size:2.4rem; margin-bottom:10px; }
+  .empty-state p { font-size:0.92rem; line-height:1.7; }
+
+  /* TOAST */
+  #toast { position:fixed; bottom:24px; right:22px; background:#2a1f14; color:#fff; padding:11px 18px; border-radius:10px; font-size:0.86rem; opacity:0; transform:translateY(10px); transition:all 0.25s; pointer-events:none; z-index:999; }
+  #toast.show { opacity:1; transform:translateY(0); }
+
+  @media(max-width:540px) {
+    .vocab-item { flex-wrap:wrap; }
+    .vocab-divider { display:none; }
+    .result-word .es-word { font-size:1.5rem; }
+    #user-name { max-width:80px; }
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Mi Diccionario <span>我的西班牙文字典</span></h1>
+    <div id="auth-area">
+      <button class="google-btn" id="login-btn">
+        <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Google 登入
+      </button>
+    </div>
+    <div id="user-area">
+      <img id="user-avatar" src="" alt="avatar">
+      <span id="user-name"></span>
+      <button class="signout-btn" id="signout-btn">登出</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="search-card">
+    <div class="lang-tabs">
+      <button class="lang-tab active" data-mode="es-zh">🇪🇸 西文 → 中／英</button>
+      <button class="lang-tab" data-mode="zh-es">🇹🇼 中文 → 西文</button>
+      <button class="lang-tab" data-mode="en-es">🇬🇧 英文 → 西文</button>
+    </div>
+    <div class="search-row">
+      <input class="search-input" id="search-input" type="text" placeholder="輸入西班牙文…" autocomplete="off"/>
+      <button class="btn btn-primary" id="search-btn">查詢</button>
+    </div>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+  <div id="result-area"></div>
+  <div class="section-title">
+    我的單字本
+    <span class="count-pill" id="vocab-count">0</span>
+  </div>
+  <div class="list-controls">
+    <input class="list-search" id="list-search" type="text" placeholder="搜尋已儲存的單字…"/>
+    <button class="btn btn-outline btn-sm" id="export-btn">📤 匯出 CSV</button>
+  </div>
+  <div id="vocab-list">
+    <div class="empty-state"><div class="empty-icon">🔐</div><p>請先登入 Google 帳號<br>才能查看和儲存你的單字本</p></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// 🔥 請把下面換成你的 Firebase config！
+// ══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyAjLSzfkSaSaMUh8ykgXfqCz96VzBiezdQ",
+  authDomain:        "mi-diccionario-b03f7.firebaseapp.com",
+  projectId:         "mi-diccionario-b03f7",
+  storageBucket:     "mi-diccionario-b03f7.firebasestorage.app",
+  messagingSenderId: "486803043132",
+  appId:             "1:486803043132:web:07475538f8748b54e12439"
+};
+// ══════════════════════════════════════════
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+let currentUser = null;
+let vocabCache  = [];
+let unsubscribe = null;
+let currentMode = 'es-zh';
+let lastResult  = null;
+
+// ── AUTH ──────────────────────────────────
+document.getElementById('login-btn').onclick = () => {
+  auth.signInWithPopup(provider).catch(e => showToast('登入失敗：' + e.message));
+};
+document.getElementById('signout-btn').onclick = () => {
+  if (!confirm('確定要登出嗎？')) return;
+  if (unsubscribe) unsubscribe();
+  auth.signOut();
+};
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  const loginArea  = document.getElementById('auth-area');
+  const userArea   = document.getElementById('user-area');
+  if (user) {
+    loginArea.style.display = 'none';
+    userArea.style.display  = 'flex';
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-avatar').style.display = user.photoURL ? 'block' : 'none';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+    listenVocab(user.uid);
+  } else {
+    loginArea.style.display = 'flex';
+    userArea.style.display  = 'none';
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    vocabCache = [];
+    renderVocabList();
+  }
+});
+
+// ── FIRESTORE ─────────────────────────────
+function vocabRef(uid) {
+  return db.collection('users').doc(uid).collection('vocabulary');
+}
+
+function listenVocab(uid) {
+  if (unsubscribe) unsubscribe();
+  unsubscribe = vocabRef(uid).orderBy('savedAt', 'desc').onSnapshot(snap => {
+    vocabCache = [];
+    snap.forEach(d => vocabCache.push({ id: d.id, ...d.data() }));
+    renderVocabList();
+    document.getElementById('vocab-count').textContent = vocabCache.length;
+  }, err => {
+    console.error('Firestore error:', err);
+    showToast('⚠️ 資料庫連線失敗：' + err.message);
+  });
+}
+
+async function saveToFirestore(item) {
+  if (!currentUser) { showToast('請先登入才能儲存單字'); return; }
+  const id = item.es.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,40) + '_' + Date.now();
+  try {
+    await vocabRef(currentUser.uid).doc(id).set({
+      es: item.es, en: item.en, zh: item.zh,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('已加入單字本 ✓');
+    const btn = document.getElementById('save-result-btn');
+    if (btn) { btn.textContent = '✓ 已收錄'; btn.classList.add('saved'); btn.disabled = true; }
+  } catch(e) {
+    showToast('儲存失敗：' + e.message);
+  }
+}
+
+async function deleteFromFirestore(id) {
+  if (!currentUser) return;
+  try {
+    await vocabRef(currentUser.uid).doc(id).delete();
+    showToast('已刪除');
+  } catch(e) { showToast('刪除失敗：' + e.message); }
+}
+
+async function updateInFirestore(id, es, en, zh) {
+  if (!currentUser) return;
+  try {
+    await vocabRef(currentUser.uid).doc(id).set(
+      { es, en, zh, savedAt: firebase.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+    showToast('已儲存修改 ✓');
+  } catch(e) { showToast('更新失敗：' + e.message); }
+}
+
+// ── LANG TABS ─────────────────────────────
+document.querySelectorAll('.lang-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lang-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    const ph = {'es-zh':'輸入西班牙文…','zh-es':'輸入中文…','en-es':'Enter English…'};
+    document.getElementById('search-input').placeholder = ph[currentMode];
+    document.getElementById('result-area').innerHTML = '';
+    document.getElementById('status-msg').className = 'status-msg';
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-input').focus();
+  });
+});
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+document.getElementById('search-btn').onclick = doSearch;
+document.getElementById('list-search').oninput = renderVocabList;
+document.getElementById('export-btn').onclick = exportCSV;
+
+// ── TRANSLATE ─────────────────────────────
+async function translate(text, from, to) {
+  const url  = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.responseStatus === 200) return data.responseData.translatedText;
+  throw new Error(data.responseDetails || 'Translation failed');
+}
+
+async function doSearch() {
+  const input = document.getElementById('search-input').value.trim();
+  if (!input) return;
+  const btn    = document.getElementById('search-btn');
+  const status = document.getElementById('status-msg');
+  btn.disabled = true;
+  status.textContent = '翻譯中…'; status.className = 'status-msg loading';
+  document.getElementById('result-area').innerHTML = '';
+  try {
+    let es='', en='', zh='';
+    if (currentMode === 'es-zh') {
+      es = input;
+      [en, zh] = await Promise.all([translate(input,'es','en'), translate(input,'es','zh-CN')]);
+    } else if (currentMode === 'zh-es') {
+      zh = input; es = await translate(input,'zh-CN','es'); en = await translate(es,'es','en');
+    } else {
+      en = input; es = await translate(input,'en','es'); zh = await translate(es,'es','zh-CN');
+    }
+    lastResult = { es, en, zh };
+    renderResult(es, en, zh);
+    status.className = 'status-msg';
+  } catch(err) {
+    status.textContent = '⚠️ 查詢失敗，請確認網路連線或稍後再試。';
+    status.className = 'status-msg error';
+  } finally { btn.disabled = false; }
+}
+
+function renderResult(es, en, zh) {
+  const already = vocabCache.some(v => v.es && v.es.toLowerCase() === es.toLowerCase());
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card">
+      <div class="result-top">
+        <div class="result-word">
+          <div class="es-word">${escHtml(es)}</div>
+          <div class="word-type">西班牙文</div>
+        </div>
+        <button class="speak-btn" onclick="speakES(${JSON.stringify(es)})" title="播放發音">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </button>
+      </div>
+      <div class="translations">
+        <div class="trans-row"><span class="lang-badge badge-en">EN</span><span class="trans-text">${escHtml(en)}</span></div>
+        <div class="trans-row"><span class="lang-badge badge-zh">中文</span><span class="trans-text">${escHtml(zh)}</span></div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-save${already?' saved':''}" id="save-result-btn"
+          onclick="saveToFirestore(${JSON.stringify({es,en,zh})})" ${already?'disabled':''}>
+          ${already ? '✓ 已收錄' : '＋ 加入單字本'}
+        </button>
+        <span style="font-size:0.78rem;color:var(--muted);">翻譯如有誤差可在單字本手動修改</span>
+      </div>
+    </div>`;
+}
+
+// ── VOCAB LIST ────────────────────────────
+function norm(str) {
+  if (!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+
+function renderVocabList() {
+  const query = norm(document.getElementById('list-search')?.value.trim() || '');
+  const filtered = query
+    ? vocabCache.filter(v => norm(v.es).includes(query) || norm(v.en).includes(query) || (v.zh||'').includes(query))
+    : vocabCache;
+
+  document.getElementById('vocab-count').textContent = vocabCache.length;
+  const container = document.getElementById('vocab-list');
+
+  if (!currentUser) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔐</div><p>請先登入 Google 帳號<br>才能查看和儲存你的單字本</p></div>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📖</div><p>${vocabCache.length === 0 ? '單字本還是空的，快去查詢並收錄你的第一個單字吧！' : '沒有符合搜尋的單字。'}</p></div>`;
+    return;
+  }
+  container.innerHTML = filtered.map(item => `
+    <div class="vocab-item" id="vitem-${item.id}">
+      <div class="vocab-es">${escHtml(item.es)}</div>
+      <div class="vocab-divider"></div>
+      <div class="vocab-trans">
+        <div class="vocab-en">🇬🇧 ${escHtml(item.en||'—')}</div>
+        <div class="vocab-zh">🇹🇼 ${escHtml(item.zh||'—')}</div>
+      </div>
+      <div class="vocab-actions">
+        <button class="icon-btn" onclick="speakES(${JSON.stringify(item.es)})" title="發音">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        </button>
+        <button class="icon-btn" onclick="editItem(${JSON.stringify(item.id)})" title="編輯">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.46a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+        <button class="icon-btn delete" onclick="deleteItem(${JSON.stringify(item.id)})" title="刪除">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+function editItem(id) {
+  const item = vocabCache.find(v => v.id === id);
+  if (!item) return;
+  const el = document.getElementById(`vitem-${id}`);
+  el.innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="lang-badge badge-es">ES</span>
+        <input id="edit-es-${id}" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:'Playfair Display',serif;font-size:1rem;color:var(--terracotta);" value="${escHtml(item.es)}"/>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="lang-badge badge-en">EN</span>
+        <input id="edit-en-${id}" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:0.9rem;" value="${escHtml(item.en||'')}"/>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="lang-badge badge-zh">中文</span>
+        <input id="edit-zh-${id}" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:0.9rem;" value="${escHtml(item.zh||'')}"/>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+        <button class="btn btn-primary btn-sm" onclick="saveEdit(${JSON.stringify(id)})">儲存</button>
+        <button class="btn btn-outline btn-sm" onclick="renderVocabList()">取消</button>
+      </div>
+    </div>`;
+}
+
+async function saveEdit(id) {
+  const es = document.getElementById(`edit-es-${id}`).value.trim();
+  const en = document.getElementById(`edit-en-${id}`).value.trim();
+  const zh = document.getElementById(`edit-zh-${id}`).value.trim();
+  await updateInFirestore(id, es, en, zh);
+}
+
+async function deleteItem(id) {
+  if (!confirm('確定要刪除這個單字嗎？')) return;
+  await deleteFromFirestore(id);
+}
+
+function exportCSV() {
+  if (!vocabCache.length) { showToast('單字本是空的！'); return; }
+  const rows = [['Spanish','English','Chinese']].concat(vocabCache.map(v=>[v.es,v.en||'',v.zh||'']));
+  const csv  = rows.map(r=>r.map(c=>`"${c.replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download='mi_diccionario.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── SPEECH ────────────────────────────────
+function speakES(text) {
+  if (!('speechSynthesis' in window)) { showToast('此瀏覽器不支援語音'); return; }
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang  = 'es-ES';
+  utt.rate  = 0.85;
+  window.speechSynthesis.speak(utt);
+}
+
+// ── TOAST / UTILS ─────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
