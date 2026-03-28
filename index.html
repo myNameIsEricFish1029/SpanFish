@@ -557,12 +557,20 @@ function renderResult(es, en, zh) {
     </div>`;
 }
 
-// ── SPEECH（Google Translate TTS）────────────────────────
+// ── SPEECH ────────────────────────────────────────────────
 function speakES(text) {
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=es&client=tw-ob`;
-  const audio = new Audio(url);
-  audio.onerror = () => showToast('⚠️ 發音載入失敗，請稍後再試');
-  audio.play().catch(() => showToast('⚠️ 請先點一下頁面再使用發音功能'));
+  if (!('speechSynthesis' in window)) {
+    showToast('此瀏覽器不支援語音');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang  = 'es-ES';
+  utt.rate  = 0.85;
+  utt.pitch = 1;
+  // 不強制指定 voice，讓瀏覽器自動選西班牙語語音
+  utt.onerror = () => showToast('⚠️ 發音失敗，請先點一下頁面再試');
+  window.speechSynthesis.speak(utt);
 }
 
 // ── TOAST / UTILS ─────────────────────────────────────────
