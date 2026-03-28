@@ -33,7 +33,6 @@
 })();
 </script>
 
-<script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
@@ -558,14 +557,12 @@ function renderResult(es, en, zh) {
     </div>`;
 }
 
-// ── SPEECH（ResponsiveVoice 線上 TTS）────────────────────
+// ── SPEECH（Google Translate TTS）────────────────────────
 function speakES(text) {
-  if (typeof responsiveVoice === 'undefined') {
-    showToast('⚠️ 語音服務載入中，請確認網路連線');
-    return;
-  }
-  responsiveVoice.cancel();
-  responsiveVoice.speak(text, 'Spanish Female', { rate: 0.9 });
+  const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=es&client=tw-ob`;
+  const audio = new Audio(url);
+  audio.onerror = () => showToast('⚠️ 發音載入失敗，請稍後再試');
+  audio.play().catch(() => showToast('⚠️ 請先點一下頁面再使用發音功能'));
 }
 
 // ── TOAST / UTILS ─────────────────────────────────────────
