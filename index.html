@@ -33,6 +33,7 @@
 })();
 </script>
 
+<script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
@@ -557,18 +558,15 @@ function renderResult(es, en, zh) {
     </div>`;
 }
 
-// ── SPEECH ────────────────────────────────────────────────
+// ── SPEECH（ResponsiveVoice 線上 TTS）────────────────────
 function speakES(text) {
-  if (!('speechSynthesis' in window)) { showToast('此瀏覽器不支援語音'); return; }
-  window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang  = 'es-ES'; utt.rate = 0.9;
-  const esVoice = speechSynthesis.getVoices().find(v => v.lang.startsWith('es'));
-  if (esVoice) utt.voice = esVoice;
-  speechSynthesis.speak(utt);
+  if (typeof responsiveVoice === 'undefined') {
+    showToast('⚠️ 語音服務載入中，請確認網路連線');
+    return;
+  }
+  responsiveVoice.cancel();
+  responsiveVoice.speak(text, 'Spanish Female', { rate: 0.9 });
 }
-window.speechSynthesis?.getVoices();
-window.speechSynthesis?.addEventListener?.('voiceschanged', ()=>speechSynthesis.getVoices());
 
 // ── TOAST / UTILS ─────────────────────────────────────────
 function showToast(msg) {
