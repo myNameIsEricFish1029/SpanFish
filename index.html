@@ -2,158 +2,262 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi Diccionario · 我的西班牙文字典</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mi Diccionario</title>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mi Dic">
 <meta name="theme-color" content="#c1440e">
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
-  :root {
-    --bg:#faf6f0;--surface:#fff9f2;--border:#e8d8c4;
-    --terracotta:#c1440e;--terracotta-light:#e05a20;
-    --gold:#b07d3a;--text:#2a1f14;--muted:#8a7060;
-    --green:#3a7d5a;--blue:#2d5f8a;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
-  header{background:var(--terracotta);padding:20px 24px 16px;position:relative;overflow:hidden;}
-  header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 18px,rgba(255,255,255,0.04) 18px,rgba(255,255,255,0.04) 36px);}
-  .header-inner{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-  header h1{font-family:'Playfair Display',serif;font-size:1.7rem;color:#fff;letter-spacing:0.02em;}
-  header h1 span{font-style:italic;font-weight:400;opacity:0.82;font-size:0.95rem;display:block;margin-top:1px;}
-  #auth-area{display:flex;align-items:center;}
-  #user-area{display:none;align-items:center;gap:10px;}
-  .google-btn{display:flex;align-items:center;gap:8px;background:#fff;color:#2a1f14;border:none;border-radius:20px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.18s;}
-  .google-btn:hover{transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.18);}
-  .google-btn svg{width:18px;height:18px;flex-shrink:0;}
-  #user-avatar{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);}
-  #user-name{color:#fff;font-size:0.85rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .signout-btn{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:12px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
-  .container{max-width:860px;margin:0 auto;padding:28px 18px 60px;}
-  .search-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:0 2px 16px rgba(42,31,20,0.07);}
-  .lang-tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-  .lang-tab{padding:7px 15px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:0.83rem;cursor:pointer;color:var(--muted);transition:all 0.18s;}
-  .lang-tab:hover{border-color:var(--terracotta);color:var(--terracotta);}
-  .lang-tab.active{background:var(--terracotta);border-color:var(--terracotta);color:#fff;font-weight:500;}
-  .search-row{display:flex;gap:10px;}
-  .search-input{flex:1;padding:12px 15px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:1rem;background:var(--bg);color:var(--text);outline:none;transition:border-color 0.18s;}
-  .search-input:focus{border-color:var(--terracotta);}
-  .search-input::placeholder{color:var(--muted);}
-  .btn{padding:12px 20px;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.92rem;font-weight:500;cursor:pointer;transition:all 0.18s;}
-  .btn-primary{background:var(--terracotta);color:#fff;}
-  .btn-primary:hover{background:var(--terracotta-light);transform:translateY(-1px);}
-  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-  .btn-sm{padding:8px 13px;font-size:0.82rem;border-radius:8px;}
-  .btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--muted);}
-  .btn-outline:hover{border-color:var(--terracotta);color:var(--terracotta);}
-  .btn-save{background:var(--gold);color:#fff;padding:9px 20px;font-size:0.88rem;}
-  .btn-save:hover{background:#c48f45;transform:translateY(-1px);}
-  .btn-save.saved{background:var(--green);cursor:default;transform:none;}
-  .status-msg{font-size:0.85rem;padding:10px 14px;border-radius:8px;margin-top:12px;display:none;}
-  .status-msg.error{background:#fde8e4;color:#c0392b;display:block;}
-  .status-msg.loading{background:#fff3e8;color:var(--gold);display:block;}
-  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(42,31,20,0.07);margin-top:20px;animation:fadeIn 0.3s ease;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  .result-top{padding:18px 22px 14px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--border);}
-  .result-word{flex:1;}
-  .result-word .es-word{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--terracotta);line-height:1.2;}
-  .result-word .word-type{font-size:0.77rem;color:var(--muted);font-style:italic;margin-top:2px;}
-  .speak-btn{background:var(--terracotta);border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.18s;margin-top:4px;}
-  .speak-btn:hover{background:var(--terracotta-light);transform:scale(1.05);}
-  .speak-btn svg{width:19px;height:19px;fill:white;}
-  .translations{padding:14px 22px 16px;}
-  .trans-row{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px dashed var(--border);}
-  .trans-row:last-child{border-bottom:none;}
-  .lang-badge{font-size:0.68rem;font-weight:500;padding:2px 8px;border-radius:10px;flex-shrink:0;letter-spacing:0.05em;text-transform:uppercase;}
-  .badge-es{background:#fce8e0;color:var(--terracotta);}
-  .badge-en{background:#ddeaf7;color:var(--blue);}
-  .badge-zh{background:#ddf0e7;color:var(--green);}
-  .trans-text{font-size:1rem;color:var(--text);}
-  .result-actions{padding:12px 22px;background:rgba(232,216,196,0.2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .section-title{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--text);margin:34px 0 12px;display:flex;align-items:center;gap:10px;}
-  .count-pill{background:var(--terracotta);color:#fff;font-family:'DM Sans',sans-serif;font-size:0.78rem;font-weight:500;padding:2px 10px;border-radius:12px;}
-  .list-controls{display:flex;gap:10px;margin-bottom:13px;flex-wrap:wrap;align-items:center;}
-  .list-search{flex:1;min-width:150px;padding:8px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:var(--bg);color:var(--text);outline:none;}
-  .list-search:focus{border-color:var(--terracotta);}
-  #vocab-list{display:flex;flex-direction:column;gap:8px;}
-  .vocab-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:12px;transition:box-shadow 0.15s;}
-  .vocab-item:hover{box-shadow:0 2px 12px rgba(42,31,20,0.08);}
-  .vocab-es{font-family:'Playfair Display',serif;font-size:1.12rem;color:var(--terracotta);min-width:120px;}
-  .vocab-divider{width:1px;height:28px;background:var(--border);flex-shrink:0;}
-  .vocab-trans{flex:1;display:flex;flex-direction:column;gap:2px;}
-  .vocab-en{font-size:0.88rem;color:var(--blue);}
-  .vocab-zh{font-size:0.88rem;color:var(--green);}
-  .vocab-actions{display:flex;gap:5px;flex-shrink:0;}
-  .icon-btn{width:32px;height:32px;border-radius:7px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;color:var(--muted);}
-  .icon-btn:hover{border-color:var(--terracotta);color:var(--terracotta);}
-  .icon-btn.delete:hover{border-color:#c0392b;color:#c0392b;}
-  .icon-btn svg{width:15px;height:15px;}
-  .empty-state{text-align:center;padding:36px 20px;color:var(--muted);border:2px dashed var(--border);border-radius:12px;}
-  .empty-state .empty-icon{font-size:2.4rem;margin-bottom:10px;}
-  .empty-state p{font-size:0.92rem;line-height:1.7;}
-  #toast{position:fixed;bottom:24px;right:22px;background:#2a1f14;color:#fff;padding:11px 18px;border-radius:10px;font-size:0.86rem;opacity:0;transform:translateY(10px);transition:all 0.25s;pointer-events:none;z-index:999;}
-  #toast.show{opacity:1;transform:translateY(0);}
-  @media(max-width:540px){
-    .vocab-item{flex-wrap:wrap;}
-    .vocab-divider{display:none;}
-    .result-word .es-word{font-size:1.5rem;}
-    #user-name{max-width:80px;}
-  }
+:root{
+  --bg:#faf6f0;--surface:#fff9f2;--border:#e8d8c4;
+  --terracotta:#c1440e;--tl:#e05a20;--gold:#b07d3a;
+  --text:#2a1f14;--muted:#8a7060;--green:#3a7d5a;--blue:#2d5f8a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;font-size:16px;}
+
+header{background:var(--terracotta);padding:14px 20px 10px;position:relative;overflow:hidden;flex-shrink:0;}
+header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 18px,rgba(255,255,255,.04) 18px,rgba(255,255,255,.04) 36px);}
+h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:#fff;letter-spacing:.02em;position:relative;}
+h1 span{font-style:italic;font-weight:400;opacity:.82;font-size:.85rem;display:block;margin-top:1px;}
+
+.view-tabs{display:flex;gap:0;position:relative;margin-top:10px;}
+.view-tab{flex:1;padding:9px 0;text-align:center;background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.75);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;border-radius:8px 8px 0 0;transition:all .15s;}
+.view-tab.on{background:var(--bg);color:var(--terracotta);}
+.view-tab:first-child{margin-right:2px;}
+
+.top-area{flex-shrink:0;background:var(--bg);padding:14px 16px 0;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(42,31,20,.06);margin-bottom:14px;}
+.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.tab{padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;color:var(--muted);transition:all .18s;min-height:40px;}
+.tab.on{background:var(--terracotta);border-color:var(--terracotta);color:#fff;font-weight:500;}
+.srow{display:flex;gap:10px;}
+input.si{flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:1rem;background:var(--bg);color:var(--text);outline:none;min-height:48px;}
+input.si:focus{border-color:var(--terracotta);}
+input.si::placeholder{color:var(--muted);}
+
+.accent-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.accent-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--terracotta);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.accent-btn:active{background:var(--terracotta);color:#fff;transform:scale(0.94);}
+
+.btn{border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .18s;min-height:48px;padding:0 20px;font-size:.95rem;}
+.pri{background:var(--terracotta);color:#fff;}
+.pri:active{background:var(--tl);}
+.pri:disabled{opacity:.5;cursor:not-allowed;}
+.sm{min-height:40px;padding:0 14px;font-size:.85rem;border-radius:8px;}
+.out{background:transparent;border:1.5px solid var(--border);color:var(--muted);}
+.out:active{border-color:var(--terracotta);color:var(--terracotta);}
+.sav{background:var(--gold);color:#fff;}
+.sav:active{background:#c48f45;}
+.sav.done{background:var(--green);cursor:default;}
+.st{font-size:.88rem;padding:10px 14px;border-radius:8px;margin-top:10px;display:none;}
+.st.err{background:#fde8e4;color:#c0392b;display:block;}
+.st.ld{background:#fff3e8;color:var(--gold);display:block;}
+
+.rc{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(42,31,20,.06);margin-bottom:14px;animation:fi .3s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.rt{padding:16px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--border);}
+.rw{flex:1;}
+.ew{font-family:'Playfair Display',serif;font-size:2rem;color:var(--terracotta);line-height:1.2;}
+.wt{font-size:.8rem;color:var(--muted);font-style:italic;margin-top:2px;}
+.spk-btns{display:flex;gap:8px;flex-direction:column;align-items:center;flex-shrink:0;}
+.sb{background:var(--terracotta);border:none;border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;}
+.sb svg{width:20px;height:20px;fill:white;}
+.sb.slow{background:var(--blue);font-size:1.2rem;}
+.trs{padding:12px 16px;}
+.tr{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border);}
+.tr:last-child{border-bottom:none;}
+.bd{font-size:.72rem;font-weight:500;padding:3px 9px;border-radius:10px;flex-shrink:0;letter-spacing:.04em;text-transform:uppercase;}
+.ben{background:#ddeaf7;color:var(--blue);}
+.bzh{background:#ddf0e7;color:var(--green);}
+.tt{font-size:1.05rem;color:var(--text);}
+.ra{padding:12px 16px;background:rgba(232,216,196,.2);}
+.ra-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.ra-row:last-child{margin-bottom:0;}
+.field-label{font-size:.85rem;color:var(--muted);white-space:nowrap;min-width:44px;}
+select.pos-select{flex:1;min-width:100px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;min-height:40px;}
+input.tag-input{flex:1;min-width:140px;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;min-height:40px;}
+
+.conj-box{margin:0 16px 14px;border:1.5px dashed var(--blue);border-radius:10px;padding:12px 14px;background:#f2f7fb;}
+.conj-title{font-size:.85rem;font-weight:500;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.conj-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.conj-table td{padding:4px 6px;border-bottom:1px dashed var(--border);}
+.conj-table td.pron{color:var(--muted);white-space:nowrap;}
+.conj-tabs{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;}
+.conj-tab{padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:.75rem;cursor:pointer;color:var(--muted);}
+.conj-tab.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.conj-extra{font-size:.78rem;color:var(--muted);margin-top:8px;}
+
+.grammar-box{margin:0 16px 14px;border:1.5px dashed var(--gold);border-radius:10px;padding:12px 14px;background:#fdf6ea;}
+.grammar-title{font-size:.85rem;font-weight:500;color:var(--gold);margin-bottom:6px;}
+.grammar-body{font-size:.85rem;color:var(--text);line-height:1.6;white-space:pre-wrap;}
+
+.vocab-area{flex:1;overflow-y:auto;padding:0 16px 24px;-webkit-overflow-scrolling:touch;}
+.sec{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--text);margin:14px 0 10px;display:flex;align-items:center;gap:10px;}
+.cp{background:var(--terracotta);color:#fff;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;padding:2px 10px;border-radius:12px;}
+
+.filter-label{font-size:.72rem;color:var(--muted);margin:8px 0 5px;font-weight:500;}
+.tag-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
+.tag-btn{padding:6px 14px;border-radius:16px;border:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer;color:var(--muted);transition:all .18s;min-height:34px;}
+.tag-btn.on{background:var(--terracotta);border-color:var(--terracotta);color:#fff;font-weight:500;}
+.tag-btn.pos-btn.on{background:var(--blue);border-color:var(--blue);}
+
+.lc{display:flex;gap:10px;margin:12px 0;align-items:center;}
+input.ls{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;min-height:44px;}
+input.ls:focus{border-color:var(--terracotta);}
+
+#vl{display:flex;flex-direction:column;gap:10px;}
+.vi{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.vi-main{padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.ves{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--terracotta);min-width:100px;flex-shrink:0;}
+.vd{width:1px;height:38px;background:var(--border);flex-shrink:0;}
+.vt{flex:1;min-width:0;}
+.ven{font-size:.9rem;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vzh{font-size:.9rem;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vbadges{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.vpos{display:inline-block;font-size:.68rem;padding:2px 8px;background:#ddeaf7;color:var(--blue);border-radius:10px;}
+.vtag{display:inline-block;font-size:.68rem;padding:2px 8px;background:#fce8e0;color:var(--terracotta);border-radius:10px;}
+
+.vi-actions{border-top:1px solid var(--border);background:rgba(232,216,196,.15);display:flex;gap:0;}
+.va-btn{flex:1;padding:10px 0;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);gap:4px;border-right:1px solid var(--border);transition:background .15s;flex-direction:column;min-height:52px;}
+.va-btn:last-child{border-right:none;}
+.va-btn:active{background:rgba(193,68,14,.08);}
+.va-btn svg{width:17px;height:17px;}
+.va-btn.del-vi:active{color:#c0392b;}
+.va-btn.tag-vi:active{color:var(--gold);}
+.va-btn.slow-vi:active{color:var(--blue);}
+.va-btn span{font-size:.68rem;}
+
+.es{text-align:center;padding:32px 20px;color:var(--muted);border:2px dashed var(--border);border-radius:12px;}
+.es .ei{font-size:2.4rem;margin-bottom:10px;}
+.es p{font-size:.92rem;line-height:1.7;}
+
+.migrate-banner{background:#fdf6ea;border:2px dashed var(--gold);border-radius:12px;padding:16px;margin-bottom:14px;font-size:.88rem;line-height:1.7;color:var(--text);}
+.migrate-banner b{color:var(--gold);}
+
+.modal-bg{position:fixed;inset:0;background:rgba(42,31,20,.5);z-index:900;display:flex;align-items:flex-end;justify-content:center;}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;padding:20px 20px 32px;width:100%;max-height:78vh;overflow-y:auto;box-shadow:0 -4px 24px rgba(42,31,20,.18);}
+.modal h3{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--text);margin-bottom:14px;}
+.modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.modal-tag{padding:8px 16px;border-radius:16px;border:1.5px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;color:var(--muted);transition:all .15s;min-height:40px;}
+.modal-tag.sel{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+.modal-new{display:flex;gap:8px;margin-bottom:16px;}
+.modal-new input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;min-height:46px;}
+.modal-actions{display:flex;gap:10px;}
+.modal-actions .btn{flex:1;min-height:48px;}
+
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(10px);background:#2a1f14;color:#fff;padding:12px 22px;border-radius:12px;font-size:.9rem;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+#view-conj{display:none;flex:1;overflow-y:auto;padding:14px 16px 24px;}
+.conj-search-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(42,31,20,.06);margin-bottom:14px;}
+.conj-result{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.conj-result .ew{font-size:1.6rem;}
+.conj-badge{display:inline-block;font-size:.72rem;padding:3px 10px;border-radius:12px;background:#ddf0e7;color:var(--green);margin-left:8px;vertical-align:middle;}
+.conj-badge.irr{background:#fde8e4;color:#c0392b;}
+.conj-full-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.conj-full-table th{text-align:left;padding:8px 8px;background:var(--bg);color:var(--muted);font-size:.78rem;font-weight:500;}
+.conj-full-table td{padding:8px 8px;border-bottom:1px dashed var(--border);font-size:.92rem;}
+.conj-full-table td.pron{color:var(--muted);font-size:.82rem;white-space:nowrap;}
+.tense-nav{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 6px;}
+.tense-btn{padding:6px 12px;border-radius:14px;border:1.5px solid var(--border);background:transparent;font-size:.78rem;cursor:pointer;color:var(--muted);}
+.tense-btn.on{background:var(--terracotta);border-color:var(--terracotta);color:#fff;}
+.non-fin{display:flex;gap:16px;margin-top:10px;font-size:.85rem;}
+.non-fin span b{color:var(--terracotta);}
+
+@media(min-width:600px){
+  html,body{overflow:auto;height:auto;}
+  .top-area{padding:20px 0 0;max-width:760px;margin:0 auto;width:100%;}
+  .vocab-area{overflow:visible;max-width:760px;margin:0 auto;width:100%;padding-bottom:60px;}
+  #view-conj{max-width:760px;margin:0 auto;width:100%;overflow:visible;}
+  .vi-main{padding:14px 18px;}
+  .vi-actions{display:none;}
+  .vi-main .va-row{display:flex;gap:6px;flex-shrink:0;}
+  .ib{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--muted);}
+  .ib:hover{border-color:var(--terracotta);color:var(--terracotta);}
+  .ib.del:hover{border-color:#c0392b;color:#c0392b;}
+  .ib svg{width:16px;height:16px;}
+  .modal-bg{align-items:center;}
+  .modal{border-radius:14px;max-width:420px;max-height:80vh;}
+  #toast{left:auto;right:24px;transform:translateY(10px);}
+  #toast.show{transform:translateY(0);}
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-inner">
-    <h1>Mi Diccionario <span>我的西班牙文字典</span></h1>
-    <div id="auth-area">
-      <button class="google-btn" id="login-btn">
-        <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        Google 登入
-      </button>
-    </div>
-    <div id="user-area">
-      <img id="user-avatar" src="" alt="avatar" style="display:none;">
-      <span id="user-name"></span>
-      <button class="signout-btn" id="signout-btn">登出</button>
-    </div>
+  <h1>Mi Diccionario <span>我的西班牙文字典</span></h1>
+  <div class="view-tabs">
+    <button class="view-tab on" id="vtab-dict">📖 字典</button>
+    <button class="view-tab" id="vtab-conj">🔀 動詞變化</button>
   </div>
 </header>
 
-<div class="container">
-  <div class="search-card">
-    <div class="lang-tabs">
-      <button class="lang-tab active" data-mode="es-zh">🇪🇸 西文 → 中／英</button>
-      <button class="lang-tab" data-mode="zh-es">🇹🇼 中文 → 西文</button>
-      <button class="lang-tab" data-mode="en-es">🇬🇧 英文 → 西文</button>
+<div class="top-area" id="view-dict">
+  <div class="card">
+    <div class="tabs">
+      <button class="tab on" data-m="es-zh">🇪🇸 西文→中／英</button>
+      <button class="tab" data-m="zh-es">🇹🇼 中文→西文</button>
+      <button class="tab" data-m="en-es">🇬🇧 英文→西文</button>
     </div>
-    <div class="search-row">
-      <input class="search-input" id="search-input" type="text" placeholder="輸入西班牙文…" autocomplete="off">
-      <button class="btn btn-primary" id="search-btn">查詢</button>
+    <div class="srow">
+      <input class="si" id="qi" type="text" placeholder="輸入西班牙文…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn pri" id="qb">查詢</button>
     </div>
-    <div class="status-msg" id="status-msg"></div>
+    <div class="accent-row" id="accent-row-1"></div>
+    <div class="st" id="st"></div>
+  </div>
+  <div id="ra"></div>
+</div>
+
+<div class="vocab-area" id="vocab-area">
+  <div class="sec">我的單字本 <span class="cp" id="vc">0</span></div>
+  <div id="migrate-banner-wrap"></div>
+
+  <div class="filter-label">詞性篩選</div>
+  <div class="tag-bar" id="pos-bar">
+    <button class="tag-btn pos-btn on" data-pos="__all__">全部</button>
+  </div>
+  <div class="filter-label">主題標籤篩選</div>
+  <div class="tag-bar" id="tag-bar">
+    <button class="tag-btn on" data-tag="__all__">全部</button>
   </div>
 
-  <div id="result-area"></div>
+  <div class="lc">
+    <input class="ls" id="ls" type="text" placeholder="搜尋已儲存的單字…" autocorrect="off" spellcheck="false">
+    <button class="btn out sm" id="eb">📤 CSV</button>
+  </div>
+  <div id="vl"><div class="es"><div class="ei">⏳</div><p>載入中…</p></div></div>
+</div>
 
-  <div class="section-title">
-    我的單字本 <span class="count-pill" id="vocab-count">0</span>
+<div id="view-conj">
+  <div class="conj-search-card">
+    <div class="srow">
+      <input class="si" id="conj-input" type="text" placeholder="輸入西班牙文動詞原形，例如 hablar" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn pri" id="conj-btn">查詢</button>
+    </div>
+    <div class="accent-row" id="accent-row-2"></div>
+    <div class="st" id="conj-st"></div>
   </div>
-  <div class="list-controls">
-    <input class="list-search" id="list-search" type="text" placeholder="搜尋已儲存的單字…">
-    <button class="btn btn-outline btn-sm" id="export-btn">📤 匯出 CSV</button>
-  </div>
-  <div id="vocab-list">
-    <div class="empty-state">
-      <div class="empty-icon">🔐</div>
-      <p>請先登入 Google 帳號<br>才能查看和儲存你的單字本</p>
+  <div id="conj-result"></div>
+  <div id="conj-grammar"></div>
+</div>
+
+<div class="modal-bg" id="tag-modal" style="display:none;">
+  <div class="modal">
+    <h3>🏷️ 選擇或新增主題標籤</h3>
+    <div class="modal-tags" id="modal-tags"></div>
+    <div class="modal-new">
+      <input type="text" id="new-tag-input" placeholder="輸入新標籤…">
+      <button class="btn pri sm" id="add-tag-btn">新增</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn out" id="modal-cancel">取消</button>
+      <button class="btn pri" id="modal-confirm">確定</button>
     </div>
   </div>
 </div>
@@ -161,302 +265,614 @@
 <div id="toast"></div>
 
 <script>
-firebase.initializeApp({
-  apiKey:            "AIzaSyAjLSzfkSaSaMUh8ykgXfqCz96VzBiezdQ",
-  authDomain:        "mi-diccionario-b03f7.firebaseapp.com",
-  projectId:         "mi-diccionario-b03f7",
-  storageBucket:     "mi-diccionario-b03f7.firebasestorage.app",
-  messagingSenderId: "486803043132",
-  appId:             "1:486803043132:web:07475538f8748b54e12439"
-});
+var POS_OPTIONS = ['名詞','動詞','形容詞','副詞','介係詞','連接詞','代名詞','冠詞','數詞','感嘆詞','片語'];
+var ACCENT_CHARS = ['á','é','í','ó','ú','ñ','ü','¿','¡'];
 
-var auth     = firebase.auth();
-var db       = firebase.firestore();
-var provider = new firebase.auth.GoogleAuthProvider();
+var mode = 'es-zh';
+var cache = [];
+var activeTag = '__all__';
+var activePos = '__all__';
+var modalId = null;
+var modalSel = null;
+var needsMigration = false;
 
-var currentUser = null;
-var vocabCache  = [];
-var unsubscribe = null;
-var currentMode = 'es-zh';
-
-document.getElementById('login-btn').onclick = function() {
-  auth.signInWithPopup(provider).catch(function(e) { showToast('登入失敗：' + e.message); });
+window.onload = function(){
+  buildAccentRow('accent-row-1', 'qi');
+  buildAccentRow('accent-row-2', 'conj-input');
+  loadWords();
 };
 
-document.getElementById('signout-btn').onclick = function() {
-  if (!confirm('確定要登出嗎？')) return;
-  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-  auth.signOut();
-};
-
-auth.onAuthStateChanged(function(user) {
-  currentUser = user;
-  if (user) {
-    document.getElementById('auth-area').style.display = 'none';
-    document.getElementById('user-area').style.display = 'flex';
-    if (user.photoURL) {
-      document.getElementById('user-avatar').src = user.photoURL;
-      document.getElementById('user-avatar').style.display = 'block';
-    }
-    document.getElementById('user-name').textContent = user.displayName || user.email;
-    listenVocab(user.uid);
-  } else {
-    document.getElementById('auth-area').style.display = 'flex';
-    document.getElementById('user-area').style.display = 'none';
-    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-    vocabCache = [];
-    renderVocabList();
-  }
-});
-
-function getVocabRef(uid) {
-  return db.collection('users').doc(uid).collection('vocabulary');
-}
-
-function listenVocab(uid) {
-  if (unsubscribe) unsubscribe();
-  unsubscribe = getVocabRef(uid).onSnapshot(function(snap) {
-    vocabCache = [];
-    snap.forEach(function(d) {
-      var data = d.data();
-      data.id = d.id;
-      vocabCache.push(data);
-    });
-    vocabCache.sort(function(a, b) {
-      var ta = a.savedAt ? (a.savedAt.seconds || 0) : 0;
-      var tb = b.savedAt ? (b.savedAt.seconds || 0) : 0;
-      return tb - ta;
-    });
-    renderVocabList();
-    document.getElementById('vocab-count').textContent = vocabCache.length;
-  }, function(err) {
-    showToast('連線失敗：' + err.code);
-    console.error(err);
+function buildAccentRow(containerId, targetInputId){
+  var c = document.getElementById(containerId);
+  ACCENT_CHARS.forEach(function(ch){
+    var b = document.createElement('button');
+    b.className = 'accent-btn';
+    b.textContent = ch;
+    b.type = 'button';
+    b.onclick = function(){ insertAtCursor(targetInputId, ch); };
+    c.appendChild(b);
   });
 }
 
-function saveWord(es, en, zh) {
-  if (!currentUser) { showToast('請先登入才能儲存單字'); return; }
-  var id = es.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 40) + '_' + Date.now();
-  getVocabRef(currentUser.uid).doc(id).set({
-    es: es, en: en, zh: zh,
-    savedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(function() {
-    showToast('已加入單字本 ✓');
-    var btn = document.getElementById('save-result-btn');
-    if (btn) { btn.textContent = '✓ 已收錄'; btn.classList.add('saved'); btn.disabled = true; }
-  }).catch(function(e) { showToast('儲存失敗：' + e.message); });
+function insertAtCursor(inputId, ch){
+  var el = document.getElementById(inputId);
+  if (!el) return;
+  var start = el.selectionStart != null ? el.selectionStart : el.value.length;
+  var end = el.selectionEnd != null ? el.selectionEnd : el.value.length;
+  el.value = el.value.slice(0, start) + ch + el.value.slice(end);
+  el.focus();
+  el.selectionStart = el.selectionEnd = start + ch.length;
 }
 
-function deleteWord(id) {
-  if (!currentUser) return;
-  if (!confirm('確定要刪除這個單字嗎？')) return;
-  getVocabRef(currentUser.uid).doc(id).delete()
-    .then(function() { showToast('已刪除'); })
-    .catch(function(e) { showToast('刪除失敗：' + e.message); });
+document.getElementById('vtab-dict').onclick = function(){ switchView('dict'); };
+document.getElementById('vtab-conj').onclick = function(){ switchView('conj'); };
+
+function switchView(v){
+  document.getElementById('vtab-dict').classList.toggle('on', v==='dict');
+  document.getElementById('vtab-conj').classList.toggle('on', v==='conj');
+  document.getElementById('view-dict').style.display = v==='dict' ? 'block' : 'none';
+  document.getElementById('vocab-area').style.display = v==='dict' ? 'block' : 'none';
+  document.getElementById('view-conj').style.display = v==='conj' ? 'block' : 'none';
 }
 
-function updateWord(id, es, en, zh) {
-  if (!currentUser) return;
-  getVocabRef(currentUser.uid).doc(id).update({ es: es, en: en, zh: zh })
-    .then(function() { showToast('已儲存修改 ✓'); })
-    .catch(function(e) { showToast('更新失敗：' + e.message); });
+function loadWords(){
+  google.script.run
+    .withSuccessHandler(function(res){
+      needsMigration = res.needsMigration;
+      cache = res.words || [];
+      renderMigrateBanner();
+      drawFilterBars();
+      draw();
+    })
+    .withFailureHandler(function(){ draw(); })
+    .getWords();
 }
 
-document.querySelectorAll('.lang-tab').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.lang-tab').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    currentMode = btn.dataset.mode;
+function renderMigrateBanner(){
+  var wrap = document.getElementById('migrate-banner-wrap');
+  if (!needsMigration) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML =
+    '<div class="migrate-banner">' +
+    '⚠️ <b>需要先執行一次資料遷移</b><br><br>' +
+    '請到 Apps Script 編輯器：<br>' +
+    '1. 上方函式下拉選單選擇 <b>migrateData</b><br>' +
+    '2. 按執行（Run）鈕，並授權<br>' +
+    '3. 完成後回到這裡重新整理頁面' +
+    '</div>';
+}
+
+function allPosValues(){
+  var set = {};
+  cache.forEach(function(v){ if(v.pos) set[v.pos]=true; });
+  return Object.keys(set);
+}
+function allTagValues(){
+  var set = {};
+  cache.forEach(function(v){
+    (v.tags||'').split('、').forEach(function(t){ t=t.trim(); if(t) set[t]=true; });
+  });
+  return Object.keys(set);
+}
+
+function drawFilterBars(){
+  var posBar = document.getElementById('pos-bar');
+  posBar.innerHTML = '';
+  var allBtn = document.createElement('button');
+  allBtn.className = 'tag-btn pos-btn' + (activePos==='__all__' ? ' on':'');
+  allBtn.textContent = '全部';
+  allBtn.onclick = function(){ activePos='__all__'; drawFilterBars(); draw(); };
+  posBar.appendChild(allBtn);
+  allPosValues().forEach(function(p){
+    var b = document.createElement('button');
+    b.className = 'tag-btn pos-btn' + (activePos===p ? ' on':'');
+    b.textContent = p;
+    b.onclick = function(){ activePos=p; drawFilterBars(); draw(); };
+    posBar.appendChild(b);
+  });
+
+  var tagBar = document.getElementById('tag-bar');
+  tagBar.innerHTML = '';
+  var allTagBtn = document.createElement('button');
+  allTagBtn.className = 'tag-btn' + (activeTag==='__all__' ? ' on':'');
+  allTagBtn.textContent = '全部';
+  allTagBtn.onclick = function(){ activeTag='__all__'; drawFilterBars(); draw(); };
+  tagBar.appendChild(allTagBtn);
+  allTagValues().forEach(function(t){
+    var b = document.createElement('button');
+    b.className = 'tag-btn' + (activeTag===t ? ' on':'');
+    b.textContent = t;
+    b.onclick = function(){ activeTag=t; drawFilterBars(); draw(); };
+    tagBar.appendChild(b);
+  });
+}
+
+document.querySelectorAll('.tab').forEach(function(b){
+  b.onclick = function(){
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); mode = b.dataset.m;
     var ph = {'es-zh':'輸入西班牙文…','zh-es':'輸入中文…','en-es':'Enter English…'};
-    document.getElementById('search-input').placeholder = ph[currentMode];
-    document.getElementById('result-area').innerHTML = '';
-    document.getElementById('status-msg').className = 'status-msg';
-    document.getElementById('search-input').value = '';
-  });
+    document.getElementById('qi').placeholder = ph[mode];
+    document.getElementById('ra').innerHTML = '';
+    document.getElementById('st').className = 'st';
+    document.getElementById('qi').value = '';
+  };
 });
+document.getElementById('qi').onkeydown = function(e){ if(e.key==='Enter'){ document.getElementById('qi').blur(); search(); }};
+document.getElementById('qb').onclick = search;
+document.getElementById('ls').oninput = draw;
+document.getElementById('eb').onclick = csv;
 
-document.getElementById('search-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
-document.getElementById('search-btn').onclick = doSearch;
-document.getElementById('list-search').oninput = renderVocabList;
-document.getElementById('export-btn').onclick = exportCSV;
-
-function xlate(text, from, to) {
-  return fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + from + '|' + to)
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.responseStatus === 200) return d.responseData.translatedText;
-      throw new Error('翻譯失敗');
-    });
+function xlate(text, from, to, cb, fail){
+  google.script.run.withSuccessHandler(cb).withFailureHandler(fail).translateText(text, from, to);
 }
 
-function doSearch() {
-  var input = document.getElementById('search-input').value.trim();
-  if (!input) return;
-  var btn    = document.getElementById('search-btn');
-  var status = document.getElementById('status-msg');
-  btn.disabled = true;
-  status.textContent = '翻譯中…';
-  status.className = 'status-msg loading';
-  document.getElementById('result-area').innerHTML = '';
+function search(){
+  var q = document.getElementById('qi').value.trim();
+  if (!q) return;
+  var qb = document.getElementById('qb'), st = document.getElementById('st');
+  qb.disabled = true; st.textContent = '翻譯中…'; st.className = 'st ld';
+  document.getElementById('ra').innerHTML = '';
 
-  var p;
-  if (currentMode === 'es-zh') {
-    p = Promise.all([xlate(input,'es','en'), xlate(input,'es','zh-CN')])
-      .then(function(r) { return {es:input, en:r[0], zh:r[1]}; });
-  } else if (currentMode === 'zh-es') {
-    p = xlate(input,'zh-CN','es').then(function(es) {
-      return xlate(es,'es','en').then(function(en) { return {es:es, en:en, zh:input}; });
-    });
+  function fail(){ st.textContent = '⚠️ 查詢失敗，請稍後再試。'; st.className = 'st err'; qb.disabled = false; }
+
+  if (mode === 'es-zh') {
+    xlate(q, 'es', 'en', function(r1){
+      xlate(q, 'es', 'zh-CN', function(r2){
+        showResult(q, r1.success?r1.text:'', r2.success?r2.text:'');
+        st.className = 'st'; qb.disabled = false;
+      }, fail);
+    }, fail);
+  } else if (mode === 'zh-es') {
+    xlate(q, 'zh', 'es', function(r1){
+      var es = r1.success ? r1.text : q;
+      xlate(es, 'es', 'en', function(r2){
+        showResult(es, r2.success?r2.text:'', q);
+        st.className = 'st'; qb.disabled = false;
+      }, fail);
+    }, fail);
   } else {
-    p = xlate(input,'en','es').then(function(es) {
-      return xlate(es,'es','zh-CN').then(function(zh) { return {es:es, en:input, zh:zh}; });
-    });
+    xlate(q, 'en', 'es', function(r1){
+      var es = r1.success ? r1.text : q;
+      xlate(es, 'es', 'zh-CN', function(r2){
+        showResult(es, q, r2.success?r2.text:'');
+        st.className = 'st'; qb.disabled = false;
+      }, fail);
+    }, fail);
   }
-
-  p.then(function(r) {
-    renderResult(r.es, r.en, r.zh);
-    status.className = 'status-msg';
-  }).catch(function() {
-    status.textContent = '⚠️ 查詢失敗，請確認網路連線或稍後再試。';
-    status.className = 'status-msg error';
-  }).finally(function() { btn.disabled = false; });
 }
 
-function renderResult(es, en, zh) {
-  var already = vocabCache.some(function(v) { return v.es && v.es.toLowerCase() === es.toLowerCase(); });
-  var esS = escJs(es), enS = escJs(en), zhS = escJs(zh);
-  document.getElementById('result-area').innerHTML =
-    '<div class="result-card">' +
-      '<div class="result-top">' +
-        '<div class="result-word">' +
-          '<div class="es-word">' + escHtml(es) + '</div>' +
-          '<div class="word-type">西班牙文</div>' +
-        '</div>' +
-        '<button class="speak-btn" onclick="speakES(\'' + esS + '\')" title="播放發音">' +
-          '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>' +
+function showResult(es, en, zh){
+  var got = cache.some(function(v){ return v.es && v.es.toLowerCase()===es.toLowerCase(); });
+  var d = document.createElement('div');
+  d.className = 'rc';
+  d.innerHTML =
+    '<div class="rt">' +
+      '<div class="rw"><div class="ew">'+H(es)+'</div><div class="wt">西班牙文</div></div>' +
+      '<div class="spk-btns">' +
+        '<button class="sb" id="spk-n" title="正常速度">'+spkSVG()+'</button>' +
+        '<button class="sb slow" id="spk-s" title="慢速">🐢</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="trs">' +
+      '<div class="tr"><span class="bd ben">EN</span><span class="tt">'+H(en)+'</span></div>' +
+      '<div class="tr"><span class="bd bzh">中文</span><span class="tt">'+H(zh)+'</span></div>' +
+    '</div>' +
+    '<div class="ra">' +
+      '<div class="ra-row">' +
+        '<span class="field-label">詞性</span>' +
+        '<select class="pos-select" id="save-pos"></select>' +
+      '</div>' +
+      '<div class="ra-row">' +
+        '<span class="field-label">標籤</span>' +
+        '<input type="text" class="tag-input" id="save-tag" placeholder="用「、」分隔，可留空">' +
+      '</div>' +
+      '<div class="ra-row">' +
+        '<button class="btn sav'+(got?' done':'')+'" id="save-result-btn"'+(got?' disabled':'')+'>' +
+          (got ? '✓ 已收錄' : '＋ 加入單字本') +
         '</button>' +
       '</div>' +
-      '<div class="translations">' +
-        '<div class="trans-row"><span class="lang-badge badge-en">EN</span><span class="trans-text">' + escHtml(en) + '</span></div>' +
-        '<div class="trans-row"><span class="lang-badge badge-zh">中文</span><span class="trans-text">' + escHtml(zh) + '</span></div>' +
-      '</div>' +
-      '<div class="result-actions">' +
-        '<button class="btn btn-save' + (already?' saved':'') + '" id="save-result-btn"' +
-          ' onclick="saveWord(\'' + esS + '\',\'' + enS + '\',\'' + zhS + '\')"' + (already?' disabled':'') + '>' +
-          (already ? '✓ 已收錄' : '＋ 加入單字本') +
-        '</button>' +
-        '<span style="font-size:0.78rem;color:var(--muted);">翻譯如有誤差可在單字本手動修改</span>' +
+    '</div>';
+  document.getElementById('ra').innerHTML = '';
+  document.getElementById('ra').appendChild(d);
+
+  var sel = document.getElementById('save-pos');
+  POS_OPTIONS.forEach(function(p){
+    var o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    sel.appendChild(o);
+  });
+  if (/^[a-záéíóúñü]+(ar|er|ir)$/i.test(es.trim())) sel.value = '動詞';
+
+  document.getElementById('spk-n').onclick = function(){ speak(es, 1); };
+  document.getElementById('spk-s').onclick = function(){ speak(es, 0.5); };
+  document.getElementById('save-result-btn').onclick = function(){
+    var pos = document.getElementById('save-pos').value;
+    var tags = document.getElementById('save-tag').value.trim();
+    addWord(es, en, zh, pos, tags);
+  };
+
+  showInlineConjIfVerb(es);
+  showInlineGrammar(es + ' ' + en + ' ' + zh);
+
+  setTimeout(function(){ d.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 100);
+}
+
+function showInlineConjIfVerb(es){
+  var infinitive = es.trim().split(/\s+/)[0].toLowerCase();
+  google.script.run.withSuccessHandler(function(res){
+    if (!res.success) return;
+    var box = document.createElement('div');
+    box.className = 'conj-box';
+    box.innerHTML = renderConjBoxHtml(res);
+    document.getElementById('ra').appendChild(box);
+    bindConjTabEvents(box, res);
+  }).withFailureHandler(function(){}).getConjugation(infinitive);
+}
+
+function showInlineGrammar(text){
+  google.script.run.withSuccessHandler(function(notes){
+    if (!notes || !notes.length) return;
+    var box = document.createElement('div');
+    box.className = 'grammar-box';
+    box.innerHTML = notes.map(function(n){
+      return '<div class="grammar-title">📘 '+H(n.title)+'</div><div class="grammar-body">'+H(n.body)+'</div>';
+    }).join('<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0;">');
+    document.getElementById('ra').appendChild(box);
+  }).withFailureHandler(function(){}).getGrammarNotes(text);
+}
+
+var CONJ_TENSES = [
+  {key:'presente', label:'現在式'},
+  {key:'preterito', label:'簡單過去式'},
+  {key:'imperfecto', label:'未完成過去式'},
+  {key:'futuro', label:'未來式'},
+  {key:'condicional', label:'條件式'}
+];
+
+function renderConjBoxHtml(res){
+  var html = '<div class="conj-title">🔀 動詞變化：'+H(res.infinitive)+(res.isIrregular?' <span style="color:#c0392b;">（不規則）</span>':'')+'</div>';
+  html += '<div class="conj-tabs">';
+  CONJ_TENSES.forEach(function(t, i){
+    html += '<button class="conj-tab'+(i===0?' on':'')+'" data-tense="'+t.key+'">'+t.label+'</button>';
+  });
+  html += '</div>';
+  html += '<div class="conj-table-wrap">'+renderConjTable(res, 'presente')+'</div>';
+  html += '<div class="conj-extra">現在分詞：'+H(res.table.gerundio||'—')+'　過去分詞：'+H(res.table.participio||'—')+'</div>';
+  return html;
+}
+
+function renderConjTable(res, tense){
+  var forms = res.table[tense] || [];
+  var rows = res.pronouns.map(function(p, i){
+    return '<tr><td class="pron">'+H(p)+'</td><td>'+H(forms[i]||'—')+'</td></tr>';
+  }).join('');
+  return '<table class="conj-table"><tbody>'+rows+'</tbody></table>';
+}
+
+function bindConjTabEvents(box, res){
+  var tabs = box.querySelectorAll('.conj-tab');
+  tabs.forEach(function(tab){
+    tab.onclick = function(){
+      tabs.forEach(function(t){ t.classList.remove('on'); });
+      tab.classList.add('on');
+      box.querySelector('.conj-table-wrap').innerHTML = renderConjTable(res, tab.dataset.tense);
+    };
+  });
+}
+
+function addWord(es, en, zh, pos, tags){
+  google.script.run
+    .withSuccessHandler(function(r){
+      if (r.needsMigration) { toast('請先完成資料遷移（見上方提示）'); return; }
+      if (r.success) {
+        toast('已加入單字本 ✓');
+        var b = document.getElementById('save-result-btn');
+        if (b) { b.textContent = '✓ 已收錄'; b.classList.add('done'); b.disabled = true; }
+        loadWords();
+      }
+    })
+    .withFailureHandler(function(){ toast('儲存失敗'); })
+    .saveWord(es, en, zh, pos, tags);
+}
+
+function delWord(id){
+  if (!confirm('確定要刪除這個單字嗎？')) return;
+  google.script.run
+    .withSuccessHandler(function(){ toast('已刪除'); loadWords(); })
+    .withFailureHandler(function(){ toast('刪除失敗'); })
+    .deleteWord(id);
+}
+
+function editItem(id){
+  var v = cache.find(function(x){ return x.id===id; });
+  if (!v) return;
+  var el = document.getElementById('vi-'+id);
+  var posOpts = POS_OPTIONS.map(function(p){
+    return '<option value="'+p+'"'+(p===v.pos?' selected':'')+'>'+p+'</option>';
+  }).join('');
+  el.innerHTML =
+    '<div style="padding:16px;display:flex;flex-direction:column;gap:10px;">' +
+      inp('ES','#fce8e0','var(--terracotta)','e1-'+id,v.es,'1.1rem') +
+      inp('EN','#ddeaf7','var(--blue)','e2-'+id,v.en,'.95rem') +
+      inp('中文','#ddf0e7','var(--green)','e3-'+id,v.zh,'.95rem') +
+      '<div style="display:flex;align-items:center;gap:8px;"><span class="bd" style="background:#ddeaf7;color:var(--blue);">詞性</span>'+
+        '<select id="e4-'+id+'" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;min-height:42px;">'+posOpts+'</select></div>' +
+      inp('標籤','#fef3e0','var(--gold)','e5-'+id,v.tags||'','.9rem') +
+      '<div style="display:flex;gap:10px;margin-top:4px;">' +
+        '<button class="btn pri" style="flex:1;min-height:46px;" onclick="saveEdit(\''+id+'\')">儲存</button>' +
+        '<button class="btn out" style="flex:1;min-height:46px;" onclick="draw()">取消</button>' +
       '</div>' +
     '</div>';
 }
 
-function norm(s) { return s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase() : ''; }
+function inp(label, bg, color, id, val, fs){
+  return '<div style="display:flex;align-items:center;gap:8px;">' +
+    '<span class="bd" style="background:'+bg+';color:'+color+';">'+label+'</span>' +
+    '<input id="'+id+'" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:'+fs+';min-height:42px;outline:none;" value="'+H(val||'')+'">' +
+  '</div>';
+}
 
-function renderVocabList() {
-  var q = norm((document.getElementById('list-search').value||'').trim());
-  var list = q ? vocabCache.filter(function(v) {
-    return norm(v.es).includes(q) || norm(v.en||'').includes(q) || (v.zh||'').includes(q);
-  }) : vocabCache;
+function saveEdit(id){
+  var es = document.getElementById('e1-'+id).value.trim();
+  var en = document.getElementById('e2-'+id).value.trim();
+  var zh = document.getElementById('e3-'+id).value.trim();
+  var pos = document.getElementById('e4-'+id).value;
+  var tags = document.getElementById('e5-'+id).value.trim();
+  google.script.run
+    .withSuccessHandler(function(r){
+      if (r.needsMigration) { toast('請先完成資料遷移'); return; }
+      toast('已儲存修改 ✓'); loadWords();
+    })
+    .withFailureHandler(function(){ toast('更新失敗'); })
+    .updateWord(id, es, en, zh, pos, tags);
+}
 
-  document.getElementById('vocab-count').textContent = vocabCache.length;
-  var c = document.getElementById('vocab-list');
+function openTagModal(id){
+  modalId = id;
+  var v = cache.find(function(x){ return x.id===id; });
+  modalSel = (v.tags||'').split('、').map(function(t){return t.trim();}).filter(Boolean);
+  renderModalTags();
+  document.getElementById('new-tag-input').value = '';
+  document.getElementById('tag-modal').style.display = 'flex';
+}
+function renderModalTags(){
+  var tags = allTagValues();
+  var c = document.getElementById('modal-tags');
+  c.innerHTML = '';
+  tags.forEach(function(t){
+    var b = document.createElement('button');
+    b.className = 'modal-tag' + (modalSel.indexOf(t)!==-1 ? ' sel':'');
+    b.textContent = t;
+    b.onclick = function(){
+      var idx = modalSel.indexOf(t);
+      if (idx===-1) modalSel.push(t); else modalSel.splice(idx,1);
+      renderModalTags();
+    };
+    c.appendChild(b);
+  });
+}
+document.getElementById('add-tag-btn').onclick = function(){
+  var v = document.getElementById('new-tag-input').value.trim();
+  if (!v) { toast('請輸入標籤名稱'); return; }
+  if (modalSel.indexOf(v)===-1) modalSel.push(v);
+  renderModalTags();
+  document.getElementById('new-tag-input').value = '';
+};
+document.getElementById('modal-cancel').onclick = function(){ document.getElementById('tag-modal').style.display='none'; };
+document.getElementById('modal-confirm').onclick = function(){
+  if (!modalId) return;
+  var v = cache.find(function(x){ return x.id===modalId; });
+  var tagStr = modalSel.join('、');
+  google.script.run
+    .withSuccessHandler(function(r){
+      if (r.needsMigration) { toast('請先完成資料遷移'); return; }
+      toast('標籤已更新 ✓'); loadWords();
+    })
+    .withFailureHandler(function(){ toast('更新失敗'); })
+    .updateWord(modalId, v.es, v.en, v.zh, v.pos, tagStr);
+  document.getElementById('tag-modal').style.display = 'none';
+};
+document.getElementById('tag-modal').onclick = function(e){ if (e.target===this) this.style.display='none'; };
 
-  if (!currentUser) {
-    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>請先登入 Google 帳號<br>才能查看和儲存你的單字本</p></div>';
+function norm(s){ return s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase() : ''; }
+
+function draw(){
+  var q = norm((document.getElementById('ls').value||'').trim());
+  var list = cache.filter(function(v){
+    var tagOk = activeTag==='__all__' || (v.tags||'').split('、').map(function(t){return t.trim();}).indexOf(activeTag)!==-1;
+    var posOk = activePos==='__all__' || v.pos===activePos;
+    var qOk = !q || norm(v.es).includes(q) || norm(v.en||'').includes(q) || (v.zh||'').includes(q);
+    return tagOk && posOk && qOk;
+  });
+  document.getElementById('vc').textContent = cache.length;
+  var c = document.getElementById('vl');
+
+  if (needsMigration) {
+    c.innerHTML = '';
     return;
   }
   if (!list.length) {
-    c.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div><p>' +
-      (vocabCache.length === 0 ? '單字本還是空的，快去查詢並收錄你的第一個單字吧！' : '沒有符合搜尋的單字。') + '</p></div>';
+    c.innerHTML = '<div class="es"><div class="ei">📖</div><p>'+(cache.length===0?'單字本還是空的，快去查詢並收錄你的第一個單字吧！':'沒有符合的單字。')+'</p></div>';
     return;
   }
-  c.innerHTML = list.map(function(v) {
-    var id = v.id, esS = escJs(v.es||'');
-    return '<div class="vocab-item" id="vitem-' + id + '">' +
-      '<div class="vocab-es">' + escHtml(v.es||'') + '</div>' +
-      '<div class="vocab-divider"></div>' +
-      '<div class="vocab-trans">' +
-        '<div class="vocab-en">🇬🇧 ' + escHtml(v.en||'—') + '</div>' +
-        '<div class="vocab-zh">🇹🇼 ' + escHtml(v.zh||'—') + '</div>' +
-      '</div>' +
-      '<div class="vocab-actions">' +
-        '<button class="icon-btn" onclick="speakES(\'' + esS + '\')" title="發音">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></button>' +
-        '<button class="icon-btn" onclick="editItem(\'' + id + '\')" title="編輯">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.46a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>' +
-        '<button class="icon-btn delete" onclick="deleteWord(\'' + id + '\')" title="刪除">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>' +
-      '</div></div>';
-  }).join('');
+  c.innerHTML = '';
+  list.forEach(function(v){
+    var div = document.createElement('div');
+    div.className = 'vi'; div.id = 'vi-'+v.id;
+
+    var main = document.createElement('div');
+    main.className = 'vi-main';
+    var tagBadges = (v.tags||'').split('、').filter(Boolean).map(function(t){ return '<span class="vtag">'+H(t)+'</span>'; }).join('');
+    main.innerHTML =
+      '<div class="ves">'+H(v.es||'')+'</div>' +
+      '<div class="vd"></div>' +
+      '<div class="vt">' +
+        '<div class="ven">🇬🇧 '+H(v.en||'—')+'</div>' +
+        '<div class="vzh">🇹🇼 '+H(v.zh||'—')+'</div>' +
+        '<div class="vbadges"><span class="vpos">'+H(v.pos||'名詞')+'</span>'+tagBadges+'</div>' +
+      '</div>';
+
+    var vaRow = document.createElement('div');
+    vaRow.className = 'va-row';
+    vaRow.innerHTML =
+      '<button class="ib spk-d" title="發音">'+spkSVG()+'</button>' +
+      '<button class="ib slow-d" title="慢速">🐢</button>' +
+      '<button class="ib tag-d" title="標籤">'+tagSVG()+'</button>' +
+      '<button class="ib edt-d" title="編輯">'+editSVG()+'</button>' +
+      '<button class="ib del del-d" title="刪除">'+delSVG()+'</button>';
+    main.appendChild(vaRow);
+    div.appendChild(main);
+
+    var actions = document.createElement('div');
+    actions.className = 'vi-actions';
+    actions.innerHTML =
+      '<button class="va-btn spk-m">'+spkSVG()+'<span>發音</span></button>' +
+      '<button class="va-btn slow-vi">🐢<span>慢速</span></button>' +
+      '<button class="va-btn tag-vi">'+tagSVG()+'<span>標籤</span></button>' +
+      '<button class="va-btn edt-vi">'+editSVG()+'<span>編輯</span></button>' +
+      '<button class="va-btn del del-vi">'+delSVG()+'<span>刪除</span></button>';
+    div.appendChild(actions);
+
+    main.querySelector('.spk-d').onclick = function(){ speak(v.es||'', 1); };
+    main.querySelector('.slow-d').onclick = function(){ speak(v.es||'', 0.5); };
+    main.querySelector('.tag-d').onclick = function(){ openTagModal(v.id); };
+    main.querySelector('.edt-d').onclick = function(){ editItem(v.id); };
+    main.querySelector('.del-d').onclick = function(){ delWord(v.id); };
+    actions.querySelector('.spk-m').onclick = function(){ speak(v.es||'', 1); };
+    actions.querySelector('.slow-vi').onclick = function(){ speak(v.es||'', 0.5); };
+    actions.querySelector('.tag-vi').onclick = function(){ openTagModal(v.id); };
+    actions.querySelector('.edt-vi').onclick = function(){ editItem(v.id); };
+    actions.querySelector('.del-vi').onclick = function(){ delWord(v.id); };
+
+    c.appendChild(div);
+  });
 }
 
-function editItem(id) {
-  var v = vocabCache.find(function(x) { return x.id === id; });
-  if (!v) return;
-  document.getElementById('vitem-' + id).innerHTML =
-    '<div style="flex:1;display:flex;flex-direction:column;gap:8px;">' +
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="lang-badge badge-es">ES</span>' +
-        '<input id="ees-' + id + '" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;" value="' + escHtml(v.es||'') + '"></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="lang-badge badge-en">EN</span>' +
-        '<input id="een-' + id + '" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;" value="' + escHtml(v.en||'') + '"></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;"><span class="lang-badge badge-zh">中文</span>' +
-        '<input id="ezh-' + id + '" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;" value="' + escHtml(v.zh||'') + '"></div>' +
-      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">' +
-        '<button class="btn btn-primary btn-sm" onclick="saveEdit(\'' + id + '\')">儲存</button>' +
-        '<button class="btn btn-outline btn-sm" onclick="renderVocabList()">取消</button></div>' +
-    '</div>';
-}
-
-function saveEdit(id) {
-  updateWord(id,
-    document.getElementById('ees-' + id).value.trim(),
-    document.getElementById('een-' + id).value.trim(),
-    document.getElementById('ezh-' + id).value.trim()
+function csv(){
+  if (!cache.length) { toast('單字本是空的！'); return; }
+  var rows = [['Spanish','English','Chinese','POS','Tags']].concat(
+    cache.map(function(v){ return [v.es||'', v.en||'', v.zh||'', v.pos||'', v.tags||'']; })
   );
-}
-
-function exportCSV() {
-  if (!vocabCache.length) { showToast('單字本是空的！'); return; }
-  var csv = [['Spanish','English','Chinese']].concat(
-    vocabCache.map(function(v) { return [v.es||'', v.en||'', v.zh||'']; })
-  ).map(function(r) { return r.map(function(c) { return '"' + c.replace(/"/g,'""') + '"'; }).join(','); }).join('\n');
+  var txt = rows.map(function(r){ return r.map(function(c){ return '"'+c.replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
   var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'}));
-  a.download = 'mi_diccionario.csv';
-  a.click();
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(txt);
+  a.download = 'mi_diccionario.csv'; a.click();
 }
 
-function speakES(text) {
-  if (!window.speechSynthesis) { showToast('此瀏覽器不支援語音'); return; }
+function speak(text, rate){
+  google.script.run
+    .withSuccessHandler(function(dataUrl){
+      var audio = new Audio(dataUrl);
+      audio.playbackRate = rate;
+      audio.play().catch(function(){ fallback(text, rate); });
+    })
+    .withFailureHandler(function(){ fallback(text, rate); })
+    .getAudioBase64(text);
+}
+function fallback(text, rate){
+  if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  var voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) { doSpeak(text, voices); }
-  else {
-    window.speechSynthesis.onvoiceschanged = function() {
-      window.speechSynthesis.onvoiceschanged = null;
-      doSpeak(text, window.speechSynthesis.getVoices());
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'es-ES'; u.rate = rate || 0.85;
+  window.speechSynthesis.speak(u);
+}
+
+document.getElementById('conj-input').onkeydown = function(e){ if(e.key==='Enter'){ this.blur(); doConjSearch(); } };
+document.getElementById('conj-btn').onclick = doConjSearch;
+
+var CONJ_ALL_TENSES = [
+  {key:'presente', label:'現在式 Presente'},
+  {key:'preterito', label:'簡單過去式 Pretérito'},
+  {key:'imperfecto', label:'未完成過去式 Imperfecto'},
+  {key:'futuro', label:'未來式 Futuro'},
+  {key:'condicional', label:'條件式 Condicional'}
+];
+
+function doConjSearch(){
+  var w = document.getElementById('conj-input').value.trim();
+  if (!w) return;
+  var st = document.getElementById('conj-st');
+  var btn = document.getElementById('conj-btn');
+  btn.disabled = true;
+  st.textContent = '查詢中…'; st.className = 'st ld';
+  document.getElementById('conj-result').innerHTML = '';
+  document.getElementById('conj-grammar').innerHTML = '';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled = false;
+      if (!res.success) {
+        st.textContent = '⚠️ 查不到這個動詞，請確認輸入的是「原形動詞」（例如 hablar、comer、vivir），且拼字含重音正確。';
+        st.className = 'st err';
+        return;
+      }
+      st.className = 'st';
+      renderFullConjResult(res);
+      loadConjGrammar(res.infinitive);
+    })
+    .withFailureHandler(function(){
+      btn.disabled = false;
+      st.textContent = '⚠️ 查詢失敗，請稍後再試。';
+      st.className = 'st err';
+    })
+    .getConjugation(w);
+}
+
+function renderFullConjResult(res){
+  var wrap = document.getElementById('conj-result');
+  var html = '<div class="conj-result">' +
+    '<div class="ew">'+H(res.infinitive)+
+    (res.isIrregular ? '<span class="conj-badge irr">不規則動詞</span>' : '<span class="conj-badge">規則動詞</span>') +
+    '</div>';
+  html += '<div class="tense-nav" id="tense-nav">';
+  CONJ_ALL_TENSES.forEach(function(t, i){
+    html += '<button class="tense-btn'+(i===0?' on':'')+'" data-tense="'+t.key+'">'+H(t.label)+'</button>';
+  });
+  html += '</div>';
+  html += '<div id="full-conj-table">'+renderFullTable(res,'presente')+'</div>';
+  html += '<div class="non-fin"><span><b>現在分詞</b> '+H(res.table.gerundio||'—')+'</span><span><b>過去分詞</b> '+H(res.table.participio||'—')+'</span></div>';
+  html += '</div>';
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.tense-btn').forEach(function(btn){
+    btn.onclick = function(){
+      wrap.querySelectorAll('.tense-btn').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      document.getElementById('full-conj-table').innerHTML = renderFullTable(res, btn.dataset.tense);
     };
-    setTimeout(function() { doSpeak(text, window.speechSynthesis.getVoices()); }, 500);
-  }
+  });
 }
 
-function doSpeak(text, voices) {
-  var utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'es-ES'; utt.rate = 0.85;
-  var v = voices.find(function(v) { return v.lang === 'es-ES'; }) ||
-          voices.find(function(v) { return v.lang.startsWith('es'); });
-  if (v) utt.voice = v;
-  window.speechSynthesis.speak(utt);
+function renderFullTable(res, tense){
+  var forms = res.table[tense] || [];
+  var rows = res.pronouns.map(function(p,i){
+    return '<tr><td class="pron">'+H(p)+'</td><td>'+H(forms[i]||'—')+
+      '<button class="ib" style="width:26px;height:26px;display:inline-flex;margin-left:6px;vertical-align:middle;" onclick="speak(\''+escJs(forms[i]||'')+'\',1)">'+spkSVG()+'</button></td></tr>';
+  }).join('');
+  return '<table class="conj-full-table"><thead><tr><th>人稱</th><th>變化</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
-function showToast(msg) {
+function loadConjGrammar(infinitive){
+  google.script.run.withSuccessHandler(function(notes){
+    if (!notes || !notes.length) return;
+    document.getElementById('conj-grammar').innerHTML = notes.map(function(n){
+      return '<div class="grammar-box"><div class="grammar-title">📘 '+H(n.title)+'</div><div class="grammar-body">'+H(n.body)+'</div></div>';
+    }).join('');
+  }).withFailureHandler(function(){}).getGrammarNotes(infinitive);
+}
+
+function spkSVG(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>'; }
+function tagSVG(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg>'; }
+function editSVG(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.46a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>'; }
+function delSVG(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>'; }
+
+function toast(msg){
   var t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2500);
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
 }
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function escJs(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n'); }
+function H(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n'); }
 </script>
 </body>
 </html>
